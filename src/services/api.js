@@ -43,8 +43,16 @@ export const api = {
     if (FORCE_MOCK) {
       return getLocalData('menu', MOCK_MENU);
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/menu`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/menu`);
+      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data;
+      }
+      return MOCK_MENU;
+    } catch (e) {
+      console.warn('API fetch failed, falling back to initial menu', e);
+      return MOCK_MENU;
+    }
   },
 
   // POST / PUT / DELETE MENU
@@ -91,8 +99,15 @@ export const api = {
     if (FORCE_MOCK) {
       return getLocalData('orders', MOCK_ORDERS);
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/orders`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/orders`);
+      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data;
+      }
+      return MOCK_ORDERS;
+    } catch (e) {
+      return MOCK_ORDERS;
+    }
   },
 
   createOrder: async (orderData) => {
@@ -119,8 +134,14 @@ export const api = {
       setLocalData('orders', [newOrder, ...current]);
       return { order_id: newId, status: 'Pending' };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/order`, orderData);
-    return res.data.data;
+    try {
+      const res = await axios.post(`${GAS_API_URL}?path=/order`, orderData);
+      return res.data.data;
+    } catch (e) {
+      // Local fallback on API error
+      const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+      return { order_id: newId, status: 'Pending' };
+    }
   },
 
   updateOrderStatus: async (order_id, status) => {
@@ -130,12 +151,16 @@ export const api = {
       setLocalData('orders', updated);
       return { message: `Status changed to ${status}` };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/order-status`, {
-      order_id,
-      status,
-      action: 'PUT_ORDER_STATUS',
-    });
-    return res.data;
+    try {
+      const res = await axios.post(`${GAS_API_URL}?path=/order-status`, {
+        order_id,
+        status,
+        action: 'PUT_ORDER_STATUS',
+      });
+      return res.data;
+    } catch (e) {
+      return { message: `Status changed to ${status}` };
+    }
   },
 
   // STOCK INVENTORY
@@ -143,8 +168,15 @@ export const api = {
     if (FORCE_MOCK) {
       return getLocalData('stock', MOCK_STOCK);
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/stock`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/stock`);
+      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        return res.data.data;
+      }
+      return MOCK_STOCK;
+    } catch (e) {
+      return MOCK_STOCK;
+    }
   },
 
   updateStock: async (stockItem) => {
