@@ -41,24 +41,20 @@ export const api = {
   // GET MENU
   getMenu: async () => {
     if (FORCE_MOCK) {
-      return getLocalData('menu', MOCK_MENU);
+      return getLocalData('menu', []);
     }
     try {
       const res = await axios.get(`${GAS_API_URL}?path=/menu`);
-      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        return res.data.data;
-      }
-      return MOCK_MENU;
+      return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      console.warn('API fetch failed, falling back to initial menu', e);
-      return MOCK_MENU;
+      return [];
     }
   },
 
   // POST / PUT / DELETE MENU
   addMenuItem: async (item) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('menu', MOCK_MENU);
+      const current = getLocalData('menu', []);
       const newItem = {
         ...item,
         id: `MNU-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -74,7 +70,7 @@ export const api = {
 
   updateMenuItem: async (item) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('menu', MOCK_MENU);
+      const current = getLocalData('menu', []);
       const updated = current.map((m) => (m.id === item.id ? { ...m, ...item } : m));
       setLocalData('menu', updated);
       return { message: 'Updated' };
@@ -85,7 +81,7 @@ export const api = {
 
   deleteMenuItem: async (id) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('menu', MOCK_MENU);
+      const current = getLocalData('menu', []);
       const updated = current.filter((m) => m.id !== id);
       setLocalData('menu', updated);
       return { message: 'Deleted' };
@@ -97,22 +93,19 @@ export const api = {
   // ORDERS
   getOrders: async () => {
     if (FORCE_MOCK) {
-      return getLocalData('orders', MOCK_ORDERS);
+      return getLocalData('orders', []);
     }
     try {
       const res = await axios.get(`${GAS_API_URL}?path=/orders`);
-      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        return res.data.data;
-      }
-      return MOCK_ORDERS;
+      return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return MOCK_ORDERS;
+      return [];
     }
   },
 
   createOrder: async (orderData) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('orders', MOCK_ORDERS);
+      const current = getLocalData('orders', []);
       const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       const newOrder = {
         order_id: newId,
@@ -138,7 +131,6 @@ export const api = {
       const res = await axios.post(`${GAS_API_URL}?path=/order`, orderData);
       return res.data.data;
     } catch (e) {
-      // Local fallback on API error
       const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       return { order_id: newId, status: 'Pending' };
     }
@@ -146,7 +138,7 @@ export const api = {
 
   updateOrderStatus: async (order_id, status) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('orders', MOCK_ORDERS);
+      const current = getLocalData('orders', []);
       const updated = current.map((o) => (o.order_id === order_id ? { ...o, status } : o));
       setLocalData('orders', updated);
       return { message: `Status changed to ${status}` };
@@ -166,16 +158,13 @@ export const api = {
   // STOCK INVENTORY
   getStock: async () => {
     if (FORCE_MOCK) {
-      return getLocalData('stock', MOCK_STOCK);
+      return getLocalData('stock', []);
     }
     try {
       const res = await axios.get(`${GAS_API_URL}?path=/stock`);
-      if (res.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        return res.data.data;
-      }
-      return MOCK_STOCK;
+      return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return MOCK_STOCK;
+      return [];
     }
   },
 
@@ -199,15 +188,19 @@ export const api = {
   // EXPENSES & REPORTS
   getExpenses: async () => {
     if (FORCE_MOCK) {
-      return getLocalData('expenses', MOCK_EXPENSES);
+      return getLocalData('expenses', []);
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/expenses`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/expenses`);
+      return Array.isArray(res.data?.data) ? res.data.data : [];
+    } catch (e) {
+      return [];
+    }
   },
 
   addExpense: async (expense) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('expenses', MOCK_EXPENSES);
+      const current = getLocalData('expenses', []);
       const newExp = {
         ...expense,
         id: `EXP-${current.length + 1}`,
@@ -223,9 +216,9 @@ export const api = {
   // DASHBOARD METRICS
   getDashboardMetrics: async () => {
     if (FORCE_MOCK) {
-      const orders = getLocalData('orders', MOCK_ORDERS);
-      const menu = getLocalData('menu', MOCK_MENU);
-      const stock = getLocalData('stock', MOCK_STOCK);
+      const orders = getLocalData('orders', []);
+      const menu = getLocalData('menu', []);
+      const stock = getLocalData('stock', []);
 
       const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
       const todayStr = new Date().toISOString().split('T')[0];
@@ -237,8 +230,8 @@ export const api = {
 
       return {
         totalRevenue,
-        todayRevenue: todayRevenue || totalRevenue * 0.35, // fallback for demo
-        todayOrders: todayOrdersArr.length || orders.length,
+        todayRevenue,
+        todayOrders: todayOrdersArr.length,
         totalOrders: orders.length,
         lowStockCount: lowStockItems.length,
         menuCount: menu.length,
@@ -246,8 +239,30 @@ export const api = {
         lowStockItems,
       };
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/dashboard`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/dashboard`);
+      return res.data.data || {
+        totalRevenue: 0,
+        todayRevenue: 0,
+        todayOrders: 0,
+        totalOrders: 0,
+        lowStockCount: 0,
+        menuCount: 0,
+        latestOrders: [],
+        lowStockItems: [],
+      };
+    } catch (e) {
+      return {
+        totalRevenue: 0,
+        todayRevenue: 0,
+        todayOrders: 0,
+        totalOrders: 0,
+        lowStockCount: 0,
+        menuCount: 0,
+        latestOrders: [],
+        lowStockItems: [],
+      };
+    }
   },
 
   // ADMIN LOGIN
