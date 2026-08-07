@@ -154,11 +154,11 @@ export const Settings = () => {
                 type="text"
                 value={formData.chat_id}
                 onChange={(e) => setFormData({ ...formData, chat_id: e.target.value })}
-                placeholder="-100123456789"
+                placeholder="123456789, 987654321 or -100123456789"
                 className="w-full px-3.5 py-2.5 bg-coffee-50 dark:bg-espresso text-slate-900 dark:text-white rounded-xl text-xs font-mono border border-coffee-200 dark:border-coffee-800"
               />
               <p className="text-[10px] text-slate-400 mt-1">
-                Chat ID where instant new order alerts are sent
+                For multiple Admins, separate IDs with commas (e.g. 12345678, 87654321) or use a Group ID (-100xxxx).
               </p>
             </div>
           </div>
