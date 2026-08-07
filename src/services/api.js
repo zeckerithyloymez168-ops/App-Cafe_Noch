@@ -44,6 +44,8 @@ const postGAS = async (path, data) => {
   }
 };
 
+import { sendDirectTelegramAlert } from './telegram';
+
 export const api = {
   // GET MENU
   getMenu: async () => {
@@ -126,11 +128,11 @@ export const api = {
   },
 
   createOrder: async (orderData) => {
+    const generatedId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
     if (FORCE_MOCK) {
       const current = getLocalData('orders', []);
-      const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       const newOrder = {
-        order_id: newId,
+        order_id: generatedId,
         customer_name: orderData.customer_name || 'Guest Customer',
         telegram_id: orderData.telegram_id || '',
         order_date: new Date().toISOString(),
@@ -138,7 +140,7 @@ export const api = {
         payment_method: orderData.payment_method || 'Cash',
         status: 'Pending',
         items: orderData.items.map((i) => ({
-          order_id: newId,
+          order_id: generatedId,
           menu_id: i.id || i.menu_id,
           menu_name: i.name,
           qty: i.qty,
@@ -147,14 +149,17 @@ export const api = {
         })),
       };
       setLocalData('orders', [newOrder, ...current]);
-      return { order_id: newId, status: 'Pending' };
+      sendDirectTelegramAlert(generatedId, orderData);
+      return { order_id: generatedId, status: 'Pending' };
     }
     try {
       const res = await postGAS('/order', orderData);
+      const finalId = res?.data?.order_id || res?.order_id || generatedId;
+      sendDirectTelegramAlert(finalId, orderData);
       return res.data || res;
     } catch (e) {
-      const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-      return { order_id: newId, status: 'Pending' };
+      sendDirectTelegramAlert(generatedId, orderData);
+      return { order_id: generatedId, status: 'Pending' };
     }
   },
 
