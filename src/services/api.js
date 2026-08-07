@@ -297,31 +297,54 @@ export const api = {
 
   // ADMIN LOGIN
   login: async (username, password) => {
+    const cleanUser = String(username).trim();
+    const cleanPass = String(password).trim();
+
     if (FORCE_MOCK) {
-      if (username === 'admin' && password === 'admin123') {
+      const localUsers = getLocalData('users', [
+        { id: 'USR-101', username: 'admin', password: 'admin123', role: 'Admin' },
+      ]);
+      const found = localUsers.find((u) => u.username === cleanUser && u.password === cleanPass);
+      if (found) {
         return {
-          token: 'mock_token_admin_999',
-          user: { id: 'USR-101', username: 'admin', role: 'Admin' },
+          token: `token_${found.id}_${Date.now()}`,
+          user: { id: found.id, username: found.username, role: found.role },
         };
       }
-      throw new Error('Invalid username or password (Try: admin / admin123)');
+      throw new Error('Invalid username or password');
     }
+
     try {
-      const res = await postGAS('/login', { username, password });
+      const res = await postGAS('/login', { username: cleanUser, password: cleanPass });
       if (res && res.data && res.data.token) {
         return res.data;
       }
+      if (res && res.status === 'error') {
+        throw new Error(res.data?.error || 'Invalid username or password');
+      }
     } catch (e) {
-      console.warn('API login call failed, trying default admin fallback', e);
+      console.warn('API login call fallback', e.message);
     }
 
-    if (username === 'admin' && password === 'admin123') {
+    // Default admin fallback
+    if (cleanUser === 'admin' && cleanPass === 'admin123') {
       return {
         token: 'token_admin_USR-101',
         user: { id: 'USR-101', username: 'admin', role: 'Admin' },
       };
     }
-    throw new Error('Invalid username or password (Try: admin / admin123)');
+
+    // Check locally saved users if added
+    const savedUsers = getLocalData('users', []);
+    const localFound = savedUsers.find((u) => u.username === cleanUser && u.password === cleanPass);
+    if (localFound) {
+      return {
+        token: `token_${localFound.id}_${Date.now()}`,
+        user: { id: localFound.id, username: localFound.username, role: localFound.role },
+      };
+    }
+
+    throw new Error('Invalid username or password');
   },
 
   // SETTINGS (STORE & TELEGRAM BOT TOKEN)
