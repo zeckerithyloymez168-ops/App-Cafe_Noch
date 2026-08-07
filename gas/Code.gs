@@ -69,6 +69,27 @@ function initializeSheetHeaders(sheet, sheetName) {
   }
   if (headers.length > 0 && sheet.getLastRow() === 0) {
     sheet.appendRow(headers);
+    
+    // Auto-populate sample rows if empty
+    if (sheetName === 'Menu') {
+      sheet.appendRow(['MNU-101', 'កាហ្វេការ៉ាមែលម៉ាគីអាតូ (Iced Caramel Macchiato)', 'Espresso', 3.80, 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=600', 'កាហ្វេអេសប្រេសសូឆុងស្រស់ជាមួយទឹកដោះគោស្រស់ និងការ៉ាមែលឈ្ងុយឆ្ងាញ់', 45, 'Active']);
+      sheet.appendRow(['MNU-102', 'ស្ប៉ានីសឡាតេ (Spanish Latte)', 'Espresso', 3.50, 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=600', 'កាហ្វេអេសប្រេសសូឌុបប៊លសុត ជាមួយទឹកដោះគោខាប់ និងទឹកដោះគោស្រស់', 60, 'Active']);
+      sheet.appendRow(['MNU-103', 'ម៉ាតឆាគ្រីមហ្វ្រេប (Matcha Cream Frappe)', 'Frappe', 4.20, 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=600', 'ម្សៅតែបៃតងជប៉ុន Uji Premium ក្រឡុកជាមួយទឹកដោះគោ', 30, 'Active']);
+      sheet.appendRow(['MNU-104', 'កាហ្វេត្រជាក់ទឹកដោះគោអូត (Cold Brew Oat Latte)', 'Cold Brew', 4.00, 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600', 'កាហ្វេត្រជាក់ 18 ម៉ោង ឆុងជាមួយទឹកដោះគោស្រូវអូត', 25, 'Active']);
+      sheet.appendRow(['MNU-105', 'នំបុ័ងខ្វាសង់ប៊ឺ (Butter Croissant)', 'Pastry', 2.50, 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600', 'នំបុ័ងខ្វាសង់ប៊ឺបារាំងស្រស់ៗ ស្រទាប់ស្រួយ', 12, 'Active']);
+      sheet.appendRow(['MNU-106', 'ប៉ាស្តាអាវ៉ូកាដូតូស និងពងទា (Avocado Toast)', 'Food', 5.50, 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600', 'នំបុ័ងស៊ួឌ័រ ជាមួយផ្លែប័រ និងពងមាន់ចំហុយ', 18, 'Active']);
+    } else if (sheetName === 'Stock') {
+      sheet.appendRow(['STK-1', 'គ្រាប់កាហ្វេអារ៉ាប៊ីកា (Arabica Coffee Beans)', 18.5, 'kg']);
+      sheet.appendRow(['STK-2', 'ទឹកដោះគោស្រស់ (Fresh Milk)', 4.0, 'L']);
+      sheet.appendRow(['STK-3', 'ទឹកដោះគោខាប់ (Condensed Milk)', 12.0, 'cans']);
+      sheet.appendRow(['STK-4', 'ម្សៅតែបៃតងម៉ាតឆា (Uji Matcha Powder)', 2.2, 'kg']);
+      sheet.appendRow(['STK-5', 'ទឹកដោះគោស្រូវអូត (Oat Milk Barista Edition)', 15.0, 'L']);
+      sheet.appendRow(['STK-6', 'កែវក្រដាសកាហ្វេ 16oz (Paper Coffee Cups)', 350, 'pcs']);
+    } else if (sheetName === 'Users') {
+      sheet.appendRow(['USR-101', 'admin', 'admin123', 'Admin']);
+    } else if (sheetName === 'Settings') {
+      sheet.appendRow(['App Cafe', 'ផ្លូវ ២៤០, រាជធានីភ្នំពេញ, កម្ពុជា', '+855 12 345 678', '', '']);
+    }
   }
 }
 
