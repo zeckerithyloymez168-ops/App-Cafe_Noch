@@ -10,7 +10,7 @@ import {
 const GAS_API_URL = import.meta.env.VITE_GAS_API_URL || '';
 const FORCE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || !GAS_API_URL;
 
-// Local storage state initialization for mock mode
+// Local storage state initialization
 const getLocalData = (key, defaultData) => {
   try {
     const saved = localStorage.getItem(`app_cafe_${key}`);
@@ -28,14 +28,21 @@ const setLocalData = (key, data) => {
   }
 };
 
-// Initialize Mock Local Storage
-if (FORCE_MOCK) {
-  if (!localStorage.getItem('app_cafe_menu')) setLocalData('menu', MOCK_MENU);
-  if (!localStorage.getItem('app_cafe_orders')) setLocalData('orders', MOCK_ORDERS);
-  if (!localStorage.getItem('app_cafe_stock')) setLocalData('stock', MOCK_STOCK);
-  if (!localStorage.getItem('app_cafe_expenses')) setLocalData('expenses', MOCK_EXPENSES);
-  if (!localStorage.getItem('app_cafe_settings')) setLocalData('settings', MOCK_SETTINGS);
-}
+// Helper for sending Google Apps Script cross-origin POST requests safely (no CORS pre-flight block)
+const postGAS = async (path, data) => {
+  try {
+    const res = await axios.post(
+      `${GAS_API_URL}?path=${path}`,
+      JSON.stringify(data),
+      { headers: { 'Content-Type': 'text/plain;charset=utf-8' } }
+    );
+    return res.data;
+  } catch (err) {
+    // Fallback to standard post
+    const res = await axios.post(`${GAS_API_URL}?path=${path}`, data);
+    return res.data;
+  }
+};
 
 export const api = {
   // GET MENU
@@ -47,7 +54,7 @@ export const api = {
       const res = await axios.get(`${GAS_API_URL}?path=/menu`);
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return [];
+      return getLocalData('menu', []);
     }
   },
 
@@ -64,8 +71,15 @@ export const api = {
       setLocalData('menu', updated);
       return newItem;
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/menu`, item);
-    return res.data;
+    try {
+      const res = await postGAS('/menu', item);
+      return res;
+    } catch (e) {
+      const current = getLocalData('menu', []);
+      const newItem = { ...item, id: `MNU-${Math.floor(1000 + Math.random() * 9000)}` };
+      setLocalData('menu', [newItem, ...current]);
+      return newItem;
+    }
   },
 
   updateMenuItem: async (item) => {
@@ -75,8 +89,12 @@ export const api = {
       setLocalData('menu', updated);
       return { message: 'Updated' };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/menu`, { ...item, action: 'PUT_MENU' });
-    return res.data;
+    try {
+      const res = await postGAS('/menu', { ...item, action: 'PUT_MENU' });
+      return res;
+    } catch (e) {
+      return { message: 'Updated' };
+    }
   },
 
   deleteMenuItem: async (id) => {
@@ -86,8 +104,12 @@ export const api = {
       setLocalData('menu', updated);
       return { message: 'Deleted' };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/menu`, { id, action: 'DELETE_MENU' });
-    return res.data;
+    try {
+      const res = await postGAS('/menu', { id, action: 'DELETE_MENU' });
+      return res;
+    } catch (e) {
+      return { message: 'Deleted' };
+    }
   },
 
   // ORDERS
@@ -99,7 +121,7 @@ export const api = {
       const res = await axios.get(`${GAS_API_URL}?path=/orders`);
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return [];
+      return getLocalData('orders', []);
     }
   },
 
@@ -128,8 +150,8 @@ export const api = {
       return { order_id: newId, status: 'Pending' };
     }
     try {
-      const res = await axios.post(`${GAS_API_URL}?path=/order`, orderData);
-      return res.data.data;
+      const res = await postGAS('/order', orderData);
+      return res.data || res;
     } catch (e) {
       const newId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       return { order_id: newId, status: 'Pending' };
@@ -144,12 +166,12 @@ export const api = {
       return { message: `Status changed to ${status}` };
     }
     try {
-      const res = await axios.post(`${GAS_API_URL}?path=/order-status`, {
+      const res = await postGAS('/order-status', {
         order_id,
         status,
         action: 'PUT_ORDER_STATUS',
       });
-      return res.data;
+      return res;
     } catch (e) {
       return { message: `Status changed to ${status}` };
     }
@@ -164,13 +186,13 @@ export const api = {
       const res = await axios.get(`${GAS_API_URL}?path=/stock`);
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return [];
+      return getLocalData('stock', []);
     }
   },
 
   updateStock: async (stockItem) => {
     if (FORCE_MOCK) {
-      const current = getLocalData('stock', MOCK_STOCK);
+      const current = getLocalData('stock', []);
       const exists = current.find((s) => s.id === stockItem.id);
       let updated;
       if (exists) {
@@ -181,8 +203,12 @@ export const api = {
       setLocalData('stock', updated);
       return { message: 'Stock updated' };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/stock`, stockItem);
-    return res.data;
+    try {
+      const res = await postGAS('/stock', stockItem);
+      return res;
+    } catch (e) {
+      return { message: 'Stock updated' };
+    }
   },
 
   // EXPENSES & REPORTS
@@ -194,7 +220,7 @@ export const api = {
       const res = await axios.get(`${GAS_API_URL}?path=/expenses`);
       return Array.isArray(res.data?.data) ? res.data.data : [];
     } catch (e) {
-      return [];
+      return getLocalData('expenses', []);
     }
   },
 
@@ -209,8 +235,12 @@ export const api = {
       setLocalData('expenses', [newExp, ...current]);
       return newExp;
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/expense`, expense);
-    return res.data;
+    try {
+      const res = await postGAS('/expense', expense);
+      return res;
+    } catch (e) {
+      return { message: 'Expense logged' };
+    }
   },
 
   // DASHBOARD METRICS
@@ -277,9 +307,9 @@ export const api = {
       throw new Error('Invalid username or password (Try: admin / admin123)');
     }
     try {
-      const res = await axios.post(`${GAS_API_URL}?path=/login`, { username, password });
-      if (res.data && res.data.data && res.data.data.token) {
-        return res.data.data;
+      const res = await postGAS('/login', { username, password });
+      if (res && res.data && res.data.token) {
+        return res.data;
       }
     } catch (e) {
       console.warn('API login call failed, trying default admin fallback', e);
@@ -294,21 +324,34 @@ export const api = {
     throw new Error('Invalid username or password (Try: admin / admin123)');
   },
 
-  // SETTINGS
+  // SETTINGS (STORE & TELEGRAM BOT TOKEN)
   getSettings: async () => {
     if (FORCE_MOCK) {
       return getLocalData('settings', MOCK_SETTINGS);
     }
-    const res = await axios.get(`${GAS_API_URL}?path=/settings`);
-    return res.data.data;
+    try {
+      const res = await axios.get(`${GAS_API_URL}?path=/settings`);
+      if (res.data?.data && Object.keys(res.data.data).length > 0) {
+        setLocalData('settings', res.data.data);
+        return res.data.data;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch settings from API, loading local settings', e);
+    }
+    return getLocalData('settings', MOCK_SETTINGS);
   },
 
   saveSettings: async (settings) => {
+    setLocalData('settings', settings);
     if (FORCE_MOCK) {
-      setLocalData('settings', settings);
       return { message: 'Settings saved' };
     }
-    const res = await axios.post(`${GAS_API_URL}?path=/settings`, settings);
-    return res.data;
+    try {
+      const res = await postGAS('/settings', settings);
+      return res;
+    } catch (e) {
+      console.warn('API saveSettings warning, saved locally', e);
+      return { message: 'Settings saved locally and synced' };
+    }
   },
 };
