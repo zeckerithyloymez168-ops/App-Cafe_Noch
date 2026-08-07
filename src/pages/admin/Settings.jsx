@@ -39,6 +39,38 @@ export const Settings = () => {
     }
   };
 
+  const handleTestTelegram = async () => {
+    if (!formData.telegram_bot_token || !formData.chat_id) {
+      toast.error('Please fill both Telegram Bot Token and Admin Chat ID');
+      return;
+    }
+    const chatIds = String(formData.chat_id)
+      .split(/[,;\s]+/)
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    toast.loading(`Sending test message to ${chatIds.length} recipient(s)...`, { id: 'tg_test' });
+
+    for (const cid of chatIds) {
+      try {
+        const url = `https://api.telegram.org/bot${formData.telegram_bot_token}/sendMessage`;
+        await api.axiosPost?.(url) || (await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: cid,
+            text: `<b>☕ TEST TELEGRAM ALERT</b>\n\nNotification test successful for Chat ID: <code>${cid}</code>.`,
+            parse_mode: 'HTML',
+          }),
+        }));
+        toast.success(`Sent alert to ${cid}`, { id: `tg_success_${cid}` });
+      } catch (err) {
+        toast.error(`Failed for ${cid}: Check if user started the bot`, { id: `tg_err_${cid}` });
+      }
+    }
+    toast.dismiss('tg_test');
+  };
+
   return (
     <div className="max-w-4xl space-y-6 animate-fade-in">
       <div>
@@ -163,13 +195,24 @@ export const Settings = () => {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="px-6 py-3.5 bg-coffee-600 hover:bg-coffee-700 text-white font-extrabold rounded-2xl shadow-xl shadow-coffee-600/30 flex items-center gap-2 transition"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save All Configurations</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              className="px-6 py-3.5 bg-coffee-600 hover:bg-coffee-700 text-white font-extrabold rounded-2xl shadow-xl shadow-coffee-600/30 flex items-center gap-2 transition"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save All Configurations</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTestTelegram}
+              className="px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-2xl shadow-xl shadow-amber-500/20 flex items-center gap-2 transition"
+            >
+              <Send className="w-4 h-4" />
+              <span>Test Telegram Alert</span>
+            </button>
+          </div>
         </form>
       ) : (
         /* Looker Studio Setup Guide Tab */
