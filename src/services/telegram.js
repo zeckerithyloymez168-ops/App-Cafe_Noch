@@ -3,14 +3,17 @@ import axios from 'axios';
 export const sendDirectTelegramAlert = async (orderId, orderData) => {
   try {
     const savedSettings = localStorage.getItem('app_cafe_settings');
-    if (!savedSettings) return;
-    
+    if (!savedSettings) {
+      console.warn('Telegram alert skipped: app_cafe_settings missing in localStorage');
+      return;
+    }
+
     const settings = JSON.parse(savedSettings);
     const token = settings.telegram_bot_token;
     const rawChatIds = settings.chat_id;
 
     if (!token || !rawChatIds) {
-      console.warn('Telegram Token or Chat ID missing in settings');
+      console.warn('Telegram Bot Token or Admin Chat ID missing in settings');
       return;
     }
 
@@ -26,22 +29,28 @@ export const sendDirectTelegramAlert = async (orderId, orderData) => {
       `<b>Total Amount:</b> $${Number(orderData.total).toFixed(2)}\n` +
       `<b>Time:</b> ${new Date().toLocaleString()}`;
 
-    // Split multiple Chat IDs by comma or space
-    const chatIds = String(rawChatIds).split(/[,;]/).map((id) => id.trim()).filter(Boolean);
+    // Support comma, semicolon, space, or newline delimited Chat IDs
+    const chatIds = String(rawChatIds)
+      .split(/[,;\s]+/)
+      .map((id) => id.trim())
+      .filter(Boolean);
 
-    for (const chatId of chatIds) {
-      try {
-        const url = `https://api.telegram.org/bot${token}/sendMessage`;
-        await axios.post(url, {
-          chat_id: chatId,
-          text: msg,
-          parse_mode: 'HTML',
-        });
-        console.log(`Telegram alert sent successfully to Chat ID: ${chatId}`);
-      } catch (err) {
-        console.error(`Failed to send Telegram alert to Chat ID ${chatId}:`, err.response?.data || err.message);
-      }
-    }
+    console.log(`Sending Telegram alert to ${chatIds.length} recipient(s):`, chatIds);
+
+    const requests = chatIds.map((chatId) => {
+      const url = `https://api.telegram.org/bot${token}/sendMessage`;
+      return axios.post(url, {
+        chat_id: chatId,
+        text: msg,
+        parse_mode: 'HTML',
+      }).then(() => {
+        console.log(`✅ Alert sent to Telegram Chat ID: ${chatId}`);
+      }).catch((err) => {
+        console.error(`❌ Failed to send alert to Chat ID: ${chatId}`, err.response?.data || err.message);
+      });
+    });
+
+    await Promise.allSettled(requests);
   } catch (e) {
     console.error('Error in sendDirectTelegramAlert:', e);
   }
