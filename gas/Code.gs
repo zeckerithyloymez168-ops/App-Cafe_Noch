@@ -427,7 +427,14 @@ function sendAdminTelegramNotification(orderId, orderData) {
     "<b>Total Amount:</b> $" + Number(orderData.total).toFixed(2) + "\n" +
     "<b>Time:</b> " + new Date().toLocaleString();
     
-  sendTelegramMessage(tg.token, tg.chat_id, msg);
+  // Support multiple admin chat IDs separated by comma or semicolon
+  var chatIds = String(tg.chat_id).split(/[,;]/);
+  for (var k = 0; k < chatIds.length; k++) {
+    var cid = chatIds[k].trim();
+    if (cid) {
+      sendTelegramMessage(tg.token, cid, msg);
+    }
+  }
 }
 
 function sendCustomerTelegramNotification(customerId, orderId, newStatus) {
