@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Production build
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
